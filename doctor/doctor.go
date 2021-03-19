@@ -1,39 +1,39 @@
 package doctor
 
 import (
+	"strconv"
+
 	"github.com/gofiber/fiber"
 	"github.com/hitolv4/apointment/data"
 )
 
 func GetDoctors(c *fiber.Ctx) {
-	db := data.DBConn
-	var doctors []data.Doctor
-	if err := db.Find(&doctors).Error; err != nil {
-		c.Status(fiber.StatusNotFound).Send("User ID doesn't")
+
+	doctors, err := data.GetDoctors()
+	if err != nil {
+		c.Status(fiber.StatusNotFound).Send(err)
 		return
 	}
 	c.JSON(doctors)
 }
-
 func GetDoctor(c *fiber.Ctx) {
-	ci := c.Params("ci")
-	db := data.DBConn
-	var doctor data.Doctor
-	if err := db.Where("ci = ?", ci).First(&doctor).Error; err != nil {
-		c.Status(fiber.StatusNotFound).Send("User not found")
+	params := c.Params("ci")
+
+	ci, _ := strconv.Atoi(params)
+	doctor, err := data.GetDoctor(ci)
+	if err != nil {
+		c.Status(fiber.StatusNotFound).Send(err)
 		return
 	}
 	c.JSON(doctor)
 }
 
 func AddDoctor(c *fiber.Ctx) {
-	db := data.DBConn
 	doctor := new(data.Doctor)
 	if err := c.BodyParser(doctor); err != nil {
 		c.Status(fiber.StatusInternalServerError).Send(err)
 		return
 	}
-
 	if doctor.Name == "" || len(doctor.Name) >= 40 {
 		c.Status(fiber.StatusBadRequest).Send("Name can't be empty or have more that 50 char ")
 		return
@@ -42,56 +42,51 @@ func AddDoctor(c *fiber.Ctx) {
 		c.Status(fiber.StatusBadRequest).Send("CI can't be empty or CI is Invalid")
 		return
 	}
-
-	if err := db.Create(&doctor).Error; err != nil {
+	newDoctor, err := data.AddDoctor(*doctor)
+	if err != nil {
 		c.Status(fiber.StatusBadRequest).Send(err)
 		return
 	}
-	c.Status(fiber.StatusCreated).JSON(doctor)
+
+	c.Status(fiber.StatusCreated).JSON(newDoctor)
 }
 
 func UpdateDoctor(c *fiber.Ctx) {
-	ci := c.Params("ci")
-	db := data.DBConn
+	params := c.Params("ci")
 
-	var doctor data.Doctor
-	if err := db.Where("ci = ?", ci).First(&doctor).Error; err != nil {
-		c.Status(fiber.StatusNotFound).Send("User not found")
+	ci, _ := strconv.Atoi(params)
+	doctor, err := data.GetDoctor(ci)
+	if err != nil {
+		c.Status(fiber.StatusNotFound).Send(err)
 		return
 	}
-
-	err := c.BodyParser(&doctor)
+	err = c.BodyParser(&doctor)
 	if err != nil {
 		c.Status(fiber.StatusInternalServerError).Send(err)
 		return
 	}
-	if len(doctor.Name) >= 40 {
-		c.Status(fiber.StatusBadRequest).Send("Name can't be empty or have more that 50 char ")
+	err = data.UpdateDoctor(ci, *doctor)
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError).Send(err)
 		return
 	}
-	if doctor.CI < 1000000 || doctor.CI > 100000000 {
-		c.Status(fiber.StatusBadRequest).Send("CI can't be empty or CI is Invalid")
-		return
-	}
-	if err := db.Model(data.Doctor{}).Where("ci = ?", ci).Updates(data.Doctor{Name: doctor.Name, CI: doctor.CI}).Error; err != nil {
-		c.Status(fiber.StatusBadRequest).Send(err)
-		return
-	}
-
 	c.Status(fiber.StatusOK).Send("Updated Doctor: ", ci)
+
 }
-
 func DeleteDoctor(c *fiber.Ctx) {
-	ci := c.Params("ci")
-	db := data.DBConn
+	params := c.Params("ci")
 
-	var doctor data.Doctor
-	db.Where("ci = ?", ci).First(&doctor)
-	if doctor.Name == "" {
-		c.Status(fiber.StatusNotFound).Send("Not doctor Found with CI ", ci)
+	ci, _ := strconv.Atoi(params)
+	doctor, err := data.GetDoctor(ci)
+	if err != nil {
+		c.Status(fiber.StatusNotFound).Send(err)
 		return
 	}
-	db.Delete(&doctor)
+	err = data.DeleteDoctor(*doctor)
+	if err != nil {
+		c.Status(fiber.StatusNotFound).Send(err)
+		return
+	}
 	c.Status(fiber.StatusOK).Send("Doctor SuccessFully deleted")
 
 }

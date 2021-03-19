@@ -8,15 +8,6 @@ import (
 )
 
 func GetUsers(c *fiber.Ctx) {
-	/*
-		db := data.DBConn
-		var users []data.User
-		if err := db.Find(&users).Error; err != nil {
-			c.Status(fiber.StatusNotFound).Send("User ID doesn't")
-			return
-		}
-		c.JSON(users)
-	*/
 
 	users, err := data.GetUsers()
 	if err != nil {

@@ -5,31 +5,32 @@ import (
 
 	"github.com/gofiber/fiber"
 	"github.com/hitolv4/apointment/data"
-	"gorm.io/gorm"
 )
 
-type User struct {
-	gorm.Model
-	Name string `gorm:"size:50;not null" json:"name"`
-	CI   int    `gorm:"size:8;unique;not null" json:"ci"`
-}
-
 func GetUsers(c *fiber.Ctx) {
-	db := data.DBConn
-	var users []User
-	if err := db.Find(&users).Error; err != nil {
+	/*
+		db := data.DBConn
+		var users []data.User
+		if err := db.Find(&users).Error; err != nil {
+			c.Status(fiber.StatusNotFound).Send("User ID doesn't")
+			return
+		}
+		c.JSON(users)
+	*/
+
+	users, err := data.GetUsers()
+	if err != nil {
 		c.Status(fiber.StatusNotFound).Send(err)
 		return
 	}
 	c.JSON(users)
 }
-
 func GetUser(c *fiber.Ctx) {
 	params := c.Params("ci")
-	db := data.DBConn
+
 	ci, _ := strconv.Atoi(params)
-	var user User
-	if err := db.Where("ci = ?", ci).First(&user).Error; err != nil {
+	user, err := data.GetUser(ci)
+	if err != nil {
 		c.Status(fiber.StatusNotFound).Send("User not found")
 		return
 	}
@@ -37,8 +38,7 @@ func GetUser(c *fiber.Ctx) {
 }
 
 func AddUser(c *fiber.Ctx) {
-	db := data.DBConn
-	user := new(User)
+	user := new(data.User)
 	if err := c.BodyParser(user); err != nil {
 		c.Status(fiber.StatusInternalServerError).Send(err)
 		return
@@ -51,56 +51,51 @@ func AddUser(c *fiber.Ctx) {
 		c.Status(fiber.StatusBadRequest).Send("CI can't be empty or CI is Invalid")
 		return
 	}
-	if err := db.Create(&user).Error; err != nil {
+	newUser, err := data.AddUser(*user)
+	if err != nil {
 		c.Status(fiber.StatusBadRequest).Send(err)
 		return
 	}
-	c.Status(fiber.StatusCreated).JSON(user)
+
+	c.Status(fiber.StatusCreated).JSON(newUser)
 }
 
 func UpdateUser(c *fiber.Ctx) {
-	ci := c.Params("ci")
-	db := data.DBConn
+	params := c.Params("ci")
 
-	var user User
-
-	if err := db.Where("ci = ?", ci).First(&user).Error; err != nil {
-		c.Status(fiber.StatusNotFound).Send("User not found")
+	ci, _ := strconv.Atoi(params)
+	user, err := data.GetUser(ci)
+	if err != nil {
+		c.Status(fiber.StatusNotFound).Send(err)
 		return
 	}
-
-	err := c.BodyParser(&user)
+	err = c.BodyParser(&user)
 	if err != nil {
 		c.Status(fiber.StatusInternalServerError).Send(err)
 		return
 	}
-
-	if len(user.Name) >= 40 {
-		c.Status(fiber.StatusBadRequest).Send("Name can't be empty or have more that 50 char ")
-		return
-	}
-	if user.CI < 1000000 || user.CI > 100000000 {
-		c.Status(fiber.StatusBadRequest).Send("CI can't be empty or CI is Invalid")
-		return
-	}
-	if err := db.Model(User{}).Where("ci = ?", ci).Updates(User{Name: user.Name, CI: user.CI}).Error; err != nil {
-		c.Status(fiber.StatusBadRequest).Send(err)
+	err = data.UpdateUser(ci, *user)
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError).Send(err)
 		return
 	}
 	c.Status(fiber.StatusOK).Send("Updated User: ", ci)
+
 }
-
 func DeleteUser(c *fiber.Ctx) {
-	ci := c.Params("ci")
-	db := data.DBConn
+	params := c.Params("ci")
 
-	var user User
-	db.Where("ci = ?", ci).First(&user)
-	if user.Name == "" {
-		c.Status(fiber.StatusNotFound).Send("Not user Found with CI ", ci)
+	ci, _ := strconv.Atoi(params)
+	user, err := data.GetUser(ci)
+	if err != nil {
+		c.Status(fiber.StatusNotFound).Send(err)
 		return
 	}
-	db.Delete(&user)
+	err = data.DeleteUser(*user)
+	if err != nil {
+		c.Status(fiber.StatusNotFound).Send(err)
+		return
+	}
 	c.Status(fiber.StatusOK).Send("User SuccessFully deleted")
 
 }

@@ -3,9 +3,6 @@ package main
 import (
 	"fmt"
 
-	"github.com/hitolv4/apointment/doctor"
-	"github.com/hitolv4/apointment/user"
-
 	"github.com/gofiber/fiber"
 	"github.com/hitolv4/apointment/data"
 	"github.com/hitolv4/apointment/routes"
@@ -16,7 +13,9 @@ import (
 func main() {
 	app := fiber.New()
 	InitDatabase()
-	routes.SetupRoutes(app)
+	routes.UserRoutes(app)
+	routes.DoctorRoutes(app)
+	routes.AppointmentRoutes(app)
 	app.Listen(3000)
 }
 
@@ -27,7 +26,8 @@ func InitDatabase() {
 		panic("failed to connect database")
 	}
 	fmt.Println("Connection Opened to Database")
-	data.DBConn.AutoMigrate(&user.User{})
-	data.DBConn.AutoMigrate(&doctor.Doctor{})
+	data.DBConn.AutoMigrate(&data.User{})
+	data.DBConn.AutoMigrate(&data.Doctor{})
+	data.DBConn.AutoMigrate(&data.Appointment{})
 	fmt.Println("Database Migrated")
 }

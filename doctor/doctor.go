@@ -3,18 +3,11 @@ package doctor
 import (
 	"github.com/gofiber/fiber"
 	"github.com/hitolv4/apointment/data"
-	"gorm.io/gorm"
 )
-
-type Doctor struct {
-	gorm.Model
-	Name string `gorm:"size:50;not null" json:"name"`
-	CI   int    `gorm:"size:8;unique;not null" json:"ci"`
-}
 
 func GetDoctors(c *fiber.Ctx) {
 	db := data.DBConn
-	var doctors []Doctor
+	var doctors []data.Doctor
 	if err := db.Find(&doctors).Error; err != nil {
 		c.Status(fiber.StatusNotFound).Send("User ID doesn't")
 		return
@@ -25,7 +18,7 @@ func GetDoctors(c *fiber.Ctx) {
 func GetDoctor(c *fiber.Ctx) {
 	ci := c.Params("ci")
 	db := data.DBConn
-	var doctor Doctor
+	var doctor data.Doctor
 	if err := db.Where("ci = ?", ci).First(&doctor).Error; err != nil {
 		c.Status(fiber.StatusNotFound).Send("User not found")
 		return
@@ -35,7 +28,7 @@ func GetDoctor(c *fiber.Ctx) {
 
 func AddDoctor(c *fiber.Ctx) {
 	db := data.DBConn
-	doctor := new(Doctor)
+	doctor := new(data.Doctor)
 	if err := c.BodyParser(doctor); err != nil {
 		c.Status(fiber.StatusInternalServerError).Send(err)
 		return
@@ -61,7 +54,7 @@ func UpdateDoctor(c *fiber.Ctx) {
 	ci := c.Params("ci")
 	db := data.DBConn
 
-	var doctor Doctor
+	var doctor data.Doctor
 	if err := db.Where("ci = ?", ci).First(&doctor).Error; err != nil {
 		c.Status(fiber.StatusNotFound).Send("User not found")
 		return
@@ -80,7 +73,7 @@ func UpdateDoctor(c *fiber.Ctx) {
 		c.Status(fiber.StatusBadRequest).Send("CI can't be empty or CI is Invalid")
 		return
 	}
-	if err := db.Model(Doctor{}).Where("ci = ?", ci).Updates(Doctor{Name: doctor.Name, CI: doctor.CI}).Error; err != nil {
+	if err := db.Model(data.Doctor{}).Where("ci = ?", ci).Updates(data.Doctor{Name: doctor.Name, CI: doctor.CI}).Error; err != nil {
 		c.Status(fiber.StatusBadRequest).Send(err)
 		return
 	}
@@ -92,7 +85,7 @@ func DeleteDoctor(c *fiber.Ctx) {
 	ci := c.Params("ci")
 	db := data.DBConn
 
-	var doctor Doctor
+	var doctor data.Doctor
 	db.Where("ci = ?", ci).First(&doctor)
 	if doctor.Name == "" {
 		c.Status(fiber.StatusNotFound).Send("Not doctor Found with CI ", ci)

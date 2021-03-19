@@ -4,11 +4,11 @@ import "errors"
 
 func GetDoctors() ([]Doctor, error) {
 	db := DBConn
-	var users []Doctor
-	if err := db.Find(&users).Error; err != nil {
+	var doctors []Doctor
+	if err := db.Find(&doctors).Error; err != nil {
 		return nil, err
 	}
-	return users, nil
+	return doctors, nil
 }
 
 func GetDoctor(ci int) (*Doctor, error) {

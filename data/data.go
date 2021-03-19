@@ -19,9 +19,9 @@ type User struct {
 
 type Appointment struct {
 	gorm.Model
-	UserID      int
-	DoctorID    int
-	Appointment time.Time
+	UserID      int       `gorm:"size:3;not null" json:"userdId"`
+	DoctorID    int       `gorm:"size:3;not null" json:"doctordId"`
+	Appointment time.Time `gorm:"not null" json:"appointment"`
 }
 
 type Doctor struct {
